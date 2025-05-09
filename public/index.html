@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>栄養素チェックモックアップ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="wrapper">
+    <!-- Step 1: 性別・年齢入力 -->
+    <div id="step1" class="step active">
+      <h2>性別・年齢</h2>
+      <div class="input-group gender-selection">
+        <label class="gender-option" data-value="male">
+          <input type="radio" name="gender" value="male">
+          <div class="gender-icon">♂</div>
+          <span>男性</span>
+        </label>
+        <label class="gender-option" data-value="female">
+          <input type="radio" name="gender" value="female">
+          <div class="gender-icon">♀</div>
+          <span>女性</span>
+        </label>
+      </div>
+      <div class="input-group">
+        <label>
+          年齢:
+          <input type="number" id="age" min="0" max="120" placeholder="例: 30">
+        </label>
+      </div>
+      <button id="next1">次へ</button>
+    </div>
+
+    <!-- Step 2: 食事の写真 アップロード -->
+    <div id="step2" class="step">
+      <h2>今日の食事の写真を選択</h2>
+      <div class="upload-grid">
+        <label>
+          朝食
+          <input type="file" id="breakfast" accept="image/*">
+        </label>
+        <label>
+          昼食
+          <input type="file" id="lunch" accept="image/*">
+        </label>
+        <label>
+          夕食
+          <input type="file" id="dinner" accept="image/*">
+        </label>
+        <label>
+          その他
+          <input type="file" id="other" accept="image/*">
+        </label>
+      </div>
+      <button id="next2">次へ</button>
+    </div>
+
+    <!-- Step 3: 不足栄養素表示 -->
+    <div id="step3" class="step">
+      <h2>不足している栄養素</h2>
+      <div id="chartArea"></div>
+      <div id="nutrientList"></div>
+      <button id="outputBtn">出力</button>
+    </div>
+  </div>
+
+  <script>
+    // ステップ切り替え用
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    const step3 = document.getElementById("step3");
+    const next1 = document.getElementById("next1");
+    const next2 = document.getElementById("next2");
+    const ageInput = document.getElementById("age");
+
+    // 性別選択の処理
+    const genderOptions = document.querySelectorAll('.gender-option');
+    genderOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        genderOptions.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+        option.querySelector('input').checked = true;
+      });
+    });
+
+    // 「次へ」ボタン (Step1 → Step2)
+    next1.addEventListener("click", () => {
+      const gender = document.querySelector('input[name="gender"]:checked');
+      const ageValue = ageInput.value.trim();
+      if (!gender || !ageValue) {
+        alert("性別と年齢を入力してください。");
+        return;
+      }
+      step1.classList.remove("active");
+      step2.classList.add("active");
+    });
+
+    // 「次へ」ボタン (Step2 → Step3)
+    next2.addEventListener("click", () => {
+      step2.classList.remove("active");
+      step3.classList.add("active");
+      showNutrientResult();
+    });
+
+    async function showNutrientResult() {
+      //分析する栄養素
+      const nutrients = [
+        "カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"
+      ];
+
+      // 性別毎基準値データ配列
+      const baseData = [
+        {
+          "性別": "男性",
+          "カルシウム": 750,
+          "鉄": 7,
+          "ビタミンA": 850,
+          "ビタミンD": 9,
+          "ビタミンB1": 1.1,
+          "ビタミンB2": 1.6,
+          "ビタミンB6": 1.5,
+          "ビタミンC": 100
+        },
+        {
+          "性別": "女性",
+          "カルシウム": 650,
+          "鉄": 10.5,
+          "ビタミンA": 650,
+          "ビタミンD": 9,
+          "ビタミンB1": 0.8,
+          "ビタミンB2": 1.2,
+          "ビタミンB6": 1.2,
+          "ビタミンC": 100
+        }
+      ];
+
+      //選択された年齢と性別を取得
+      const age = document.getElementById('age').value.trim();
+      const genderInput = document.querySelector('input[name="gender"]:checked');
+      const gender = genderInput ? (genderInput.value === "male" ? "男性" : "女性") : "";
+
+      //選択された画像の取得
+      const breakfastFile = document.getElementById('breakfast').files[0] || null;
+      const lunchFile = document.getElementById('lunch').files[0] || null;
+      const dinnerFile = document.getElementById('dinner').files[0] || null;
+      const otherFile = document.getElementById('other').files[0] || null;
+
+      //デバッグのためファイル名を出力
+      console.log(`朝食：${breakfastFile ? "'" + breakfastFile.name + "'" : null}`);
+      console.log(`昼食：${lunchFile ? "'" + lunchFile.name + "'" : null}`);
+      console.log(`夕食：${dinnerFile ? "'" + dinnerFile.name + "'" : null}`);
+      console.log(`その他：${otherFile ? "'" + otherFile.name + "'" : null}`);
+
+      //選択された性別の基準値を取得
+      const baseValues = baseData.find(item => item["性別"] === gender);
+
+      //GPTに与えるため画像をBase64に変換
+      const breakfastBase64Image = breakfastFile ? await fileToBase64(breakfastFile) : null;
+      const lunchBase64Image = lunchFile ? await fileToBase64(lunchFile) : null;
+      const dinnerBase64Image = dinnerFile ? await fileToBase64(dinnerFile) : null;
+      const otherBase64Image = otherFile ? await fileToBase64(otherFile) : null;
+
+      //GPTに栄養素を推定するためのリクエストを送信
+      const result = await getNutrientData(breakfastBase64Image, lunchBase64Image, dinnerBase64Image, otherBase64Image);
+      let intakeData = [];
+      if (result) {
+        //デバッグのため推定結果を出力
+        console.log(result);
+        const lines = result.split("\n");
+        const outputIndex = lines.findIndex(line => line.includes("出力"));
+        const mainResult = lines[outputIndex + 2]; // 出力の2行後
+        const pairs = mainResult.split(",");
+        pairs.forEach(pair => {
+          const [nameRaw, valueRaw] = pair.split(":");
+          if (!nameRaw || !valueRaw) return; // 応答不正防止
+          const name = nameRaw.trim();
+          if (!nutrients.includes(name)) return;
+          // 単位を除去して数値化 ("13μg" → 13, "0.3mg" → 0.3)
+          const numeric = parseFloat(valueRaw.replace(/[^0-9.]/g, ""));
+          intakeData.push({ name, value: numeric });
+        });
+      }
+
+      // レーダーチャート用データ変換
+      const chartData = intakeData.map(item => ({
+        name: item.name,
+        value: item.value / baseValues[item.name]
+      }));
+
+      // 不足率リスト用データ変換
+      const deficiencyData = chartData.map(item => ({
+        name: item.name,
+        percentage: Math.round(item.value * 100)
+      }));
+
+      renderRadarChart(chartData);
+      renderDeficiencyList(deficiencyData);
+    }
+
+    //画像をBase64に変換
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        // サポートされているMIMEタイプかチェック
+        const supportedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        if (!supportedTypes.includes(file.type)) {
+          reject(new Error('対応していない画像形式です: ' + file.type));
+          return;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+          reject(new Error('ファイルサイズが20MBを超えています'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    //サーバーにリクエストを送信
+    async function getNutrientData(breakfast, lunch, dinner, other) {
+      const images = [breakfast, lunch, dinner, other].filter(Boolean);
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(images)
+      });
+
+      if (!response.ok) {
+        console.error("Backend error", await response.text());
+        return null;
+      }
+
+      const { text } = await response.json();
+      return text;
+    }
+
+    /**
+     * レーダーチャート描画
+     * ・外側は正八角形（100%必要量：オレンジ）
+     * ・中心から各頂点への軸線と、各頂点に栄養素名（font-size 10px）
+     * ・内側の多角形は実際の摂取量（緑）
+     */
+    function renderRadarChart(data) {
+      const chartArea = document.getElementById("chartArea");
+      chartArea.innerHTML = "";
+      const size = 220;
+      const center = size / 2;
+      const maxRadius = 80;
+
+      // 外側の正八角形の頂点（各頂点は均等に配置、100%の必要量を表す）
+      const outerPoints = data.map((item, i) => {
+        const angle = (2 * Math.PI / data.length) * i - Math.PI / 2;
+        return {
+          x: center + maxRadius * Math.cos(angle),
+          y: center + maxRadius * Math.sin(angle),
+          angle: angle,
+          name: item.name
+        };
+      });
+      const outerPolygonStr = outerPoints.map(p => `${p.x},${p.y}`).join(" ");
+
+      // 内側の摂取量多角形（各頂点の半径は「摂取量」に応じる）
+      const innerPoints = data.map((item, i) => {
+        const angle = (2 * Math.PI / data.length) * i - Math.PI / 2;
+        const r = Math.min(item.value, 1) * maxRadius; // 100% 超を丸める
+        return {
+          x: center + r * Math.cos(angle),
+          y: center + r * Math.sin(angle)
+        };
+      });
+      const innerPolygonStr = innerPoints.map(p => `${p.x},${p.y}`).join(" ");
+
+      // SVG生成
+      let svgContent = `
+      <svg width="${size}" height="${size}">
+        <!-- 外側の正八角形：100%必要量（オレンジ） -->
+        <polygon points="${outerPolygonStr}"
+                 fill="orange" stroke="darkorange" stroke-width="2"/>
+    `;
+      // 軸線（中心から各頂点へ）
+      outerPoints.forEach(pt => {
+        svgContent += `
+        <line x1="${center}" y1="${center}" x2="${pt.x}" y2="${pt.y}"
+              stroke="#E6D7B3" stroke-width="1"/>
+      `;
+      });
+      // 内側の摂取量多角形（緑）
+      svgContent += `
+        <polygon points="${innerPolygonStr}"
+                 fill="green" stroke="darkgreen" stroke-width="2"/>
+    `;
+      // 各頂点に栄養素名（外側の正八角形より10px外側に配置）
+      outerPoints.forEach(pt => {
+        const offset = 10;
+        const x = center + (maxRadius + offset) * Math.cos(pt.angle);
+        const y = center + (maxRadius + offset) * Math.sin(pt.angle);
+        let anchor = "middle";
+        if (Math.cos(pt.angle) > 0.1) anchor = "start";
+        else if (Math.cos(pt.angle) < -0.1) anchor = "end";
+        svgContent += `<text x="${x}" y="${y}" font-size="10" fill="#6B564E" text-anchor="${anchor}">${pt.name}</text>`;
+      });
+
+      svgContent += `</svg>`;
+      chartArea.innerHTML = svgContent;
+    }
+
+    /**
+     * 不足度リストの描画
+     * ・不足度は「100 - 摂取量（％）」で計算
+     */
+    function renderDeficiencyList(data) {
+      const nutrientList = document.getElementById("nutrientList");
+      nutrientList.innerHTML = "";
+      data.forEach(item => {
+        const lack = Math.max(0, 100 - item.percentage);
+        const p = document.createElement("p");
+        p.textContent = `${item.name}: 不足 ${lack}%`;
+        nutrientList.appendChild(p);
+      });
+    }
+  </script>
+</body>
+
+</html>
