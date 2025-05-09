@@ -68,7 +68,7 @@ app.post("/api/analyze", async (req, res) => {
     }
 });
 
-//ポート3000で待機
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
