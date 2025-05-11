@@ -144,7 +144,7 @@
 
     /* 追加するCSS */
     #loadingImage {
-      animation: rotation 1s linear infinite;
+      animation: rotation 3s linear infinite;
     }
 
     @keyframes rotation {
