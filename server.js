@@ -44,10 +44,10 @@ app.post("/api/analyze", async (req, res) => {
                     "type": "file_search",
                     "vector_store_ids": ["vs_680ded984ba48191a1a9fa2b06dd3ae1"]
                 },
-                {
-                    //栄養素一覧表に食品がない場合は、Web検索で代用するためのツール
-                    "type": "web_search"
-                }
+                // {
+                //     //栄養素一覧表に食品がない場合は、Web検索で代用するためのツール
+                //     "type": "web_search"
+                // }
             ],
             input: [
                 {
