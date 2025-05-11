@@ -47,7 +47,8 @@ app.post("/api/analyze", async (req, res) => {
                 {
                     //栄養素一覧表に食品がない場合は、Web検索で代用するためのツール
                     "type": "web_search"
-                }],
+                }
+            ],
             input: [
                 {
                     role: "user",
@@ -70,5 +71,5 @@ app.post("/api/analyze", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
