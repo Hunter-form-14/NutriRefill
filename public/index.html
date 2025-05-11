@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>栄養素チェックモックアップ</title>
+  <title>栄養素チェックプロトタイプ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -27,11 +27,21 @@
       </div>
       <div class="input-group">
         <label>
-          年齢:
-          <input type="number" id="age" min="0" max="120" placeholder="例: 30">
+          年代:
+          <select id="generation">
+            <option value="">選択してください</option>
+            <option value="10s">10代</option>
+            <option value="20s">20代</option>
+            <option value="30s">30代</option>
+            <option value="40s">40代</option>
+            <option value="50s">50代</option>
+            <option value="60s">60代</option>
+            <option value="70s">70代</option>
+          </select>
         </label>
       </div>
       <button id="next1">次へ</button>
+      <p>※ 将来、アカウント利用でこの画面は不要になります</p>
     </div>
 
     <!-- Step 2: 食事の写真 アップロード -->
@@ -61,6 +71,10 @@
     <!-- Step 3: 不足栄養素表示 -->
     <div id="step3" class="step">
       <h2>不足している栄養素</h2>
+      <div id="loadingIndicator" style="display:none; flex-direction:column; align-items:center; margin:20px 0;">
+        <img id="loadingImage" src="Dish.png" alt="loading" style="width:48px; height:48px;">
+        <p>推定中...</p>
+      </div>
       <div id="chartArea"></div>
       <div id="nutrientList"></div>
       <button id="outputBtn">出力</button>
@@ -106,6 +120,10 @@
     });
 
     async function showNutrientResult() {
+      // ローディング表示を表示
+      const loading = document.getElementById('loadingIndicator');
+      loading.style.display = 'flex';
+
       //分析する栄養素
       const nutrients = [
         "カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"
@@ -167,6 +185,8 @@
       const result = await getNutrientData(breakfastBase64Image, lunchBase64Image, dinnerBase64Image, otherBase64Image);
       let intakeData = [];
       if (result) {
+        // ローディング表示を非表示
+        loading.style.display = 'none';
         //デバッグのため推定結果を出力
         console.log(result);
         const lines = result.split("\n");
