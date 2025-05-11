@@ -103,9 +103,9 @@
     // 「次へ」ボタン (Step1 → Step2)
     next1.addEventListener("click", () => {
       const gender = document.querySelector('input[name="gender"]:checked');
-      const ageValue = ageInput.value.trim();
-      if (!gender || !ageValue) {
-        alert("性別と年齢を入力してください。");
+      const generation = document.getElementById('generation').value;
+      if (!gender || !generation) {
+        alert("性別と年代を選択してください。");
         return;
       }
       step1.classList.remove("active");
