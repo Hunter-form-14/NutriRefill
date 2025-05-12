@@ -84,7 +84,7 @@
       border-radius: 4px;
     }
 
-    /* 食事写真アップロード（2列×2行） */
+    /* 食事写真アップロード（1列×4行） */
     .upload-grid {
       display: grid;
       grid-template-columns: 1fr;
