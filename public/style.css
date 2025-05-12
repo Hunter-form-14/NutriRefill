@@ -87,7 +87,7 @@
     /* 食事写真アップロード（2列×2行） */
     .upload-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       grid-row-gap: 12px;
       grid-column-gap: 12px;
       margin-bottom: 16px;
