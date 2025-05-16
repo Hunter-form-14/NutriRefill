@@ -135,18 +135,31 @@
         // 1) 未接続なら接続
         if (!bleCharacteristic) await connectBle();
 
-        // 2) 不足量を算出
-        const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"];
-        const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
-        const lackArray = nutrients.map(n => {
-          const lack = Math.max(0, (baseValues[n] || 0) - (intakeMap[n] || 0));
-          return lack.toFixed(1); // 小数1桁
-        });
-        const csv = lackArray.join(',');
+        // 2) デバッグ用数値生成（新規追加）
+        const generateDebugData = () => {
+          const dataView = new DataView(new ArrayBuffer(8 * 4)); // 32bit整数×8要素
+          for (let i = 0; i < 8; i++) {
+            const value = Math.floor(Math.random() * 9000) + 1000;
+            dataView.setInt32(i * 4, value, true); // リトルエンディアン
+          }
+          return dataView.buffer;
+        };
+        // デバッグ用送信コード
+        const debugData = generateDebugData();
+        await bleCharacteristic.writeValue(debugData);
 
-        // 3) 書き込み
-        const encoder = new TextEncoder();
-        await bleCharacteristic.writeValue(encoder.encode(csv));
+        // // 2) 不足量を算出
+        // const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"];
+        // const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
+        // const lackArray = nutrients.map(n => {
+        //   const lack = Math.max(0, (baseValues[n] || 0) - (intakeMap[n] || 0));
+        //   return lack.toFixed(1); // 小数1桁
+        // });
+        // const csv = lackArray.join(',');
+
+        // // 3) 書き込み
+        // const encoder = new TextEncoder();
+        // await bleCharacteristic.writeValue(encoder.encode(csv));
 
         alert('送信しました:\n' + csv);
       } catch (err) {
