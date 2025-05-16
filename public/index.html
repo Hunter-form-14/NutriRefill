@@ -135,22 +135,19 @@
         // 1) 未接続なら接続
         if (!bleCharacteristic) await connectBle();
 
-// 2) デバッグ用数値生成（新規追加）
-    const generateDebugData = () => {
-      const dataView = new DataView(new ArrayBuffer(8 * 4)); // 32bit整数×8要素
-      const values = [];
-      for (let i = 0; i < 8; i++) {
-        const value = Math.floor(Math.random() * 9000) + 1000;
-        dataView.setInt32(i * 4, value, true); // リトルエンディアン
-        values.push(value);
-      }
-      return { buffer: dataView.buffer, values };
-    };
-    // デバッグ用送信コード
-    const debug = generateDebugData();
-    await bleCharacteristic.writeValue(debug.buffer);
+        // デバッグデータ生成（8値 + フラグ）
+        const generateDebugData = () => {
+          const values = Array.from({ length: 8 }, () =>
+            Math.floor(Math.random() * 9000) + 1000
+          );
+          values.push(0); // デバッグフラグ（0=通常モード）
+          return new TextEncoder().encode(values.join(','));
+        };
 
-    alert('送信しました（デバッグ値）:\n' + debug.values.join(', '));
+        const debugData = generateDebugData();
+        await bleCharacteristic.writeValue(debugData);
+
+        alert(`送信成功: ${new TextDecoder().decode(debugData)}`);
 
         // // 2) 不足量を算出
         // const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"];
@@ -166,7 +163,7 @@
         // await bleCharacteristic.writeValue(encoder.encode(csv));
 
         // alert('送信しました:\n' + csv);
-        
+
       } catch (err) {
         console.error('BLE 送信エラー', err);
         alert('送信に失敗しました: ' + err.message);
