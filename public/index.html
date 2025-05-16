@@ -82,6 +82,16 @@
   </div>
 
   <script>
+    /* ---------- BLE 固定 UUID ---------- */
+    const SERVICE_UUID = '00002220-0000-1000-8000-00805f9b34fb';
+    const CHARACTERISTIC_UUID_RX = '00002222-0000-1000-8000-00805f9b34fb';
+
+    /* ---------- グローバル保持 ---------- */
+    let bleDevice = null;
+    let bleCharacteristic = null;
+    let intakeData = [];        // [{name, value}]
+    let baseValues = {};        // {カルシウム: 750, …}
+
     // ステップ切り替え用
     const step1 = document.getElementById("step1");
     const step2 = document.getElementById("step2");
@@ -118,6 +128,45 @@
       step3.classList.add("active");
       showNutrientResult();
     });
+
+    /* ---------- 出力ボタン ---------- */
+    document.getElementById('outputBtn').addEventListener('click', async () => {
+      try {
+        // 1) 未接続なら接続
+        if (!bleCharacteristic) await connectBle();
+
+        // 2) 不足量を算出
+        const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンC"];
+        const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
+        const lackArray = nutrients.map(n => {
+          const lack = Math.max(0, (baseValues[n] || 0) - (intakeMap[n] || 0));
+          return lack.toFixed(1); // 小数1桁
+        });
+        const csv = lackArray.join(',');
+
+        // 3) 書き込み
+        const encoder = new TextEncoder();
+        await bleCharacteristic.writeValue(encoder.encode(csv));
+
+        alert('送信しました:\n' + csv);
+      } catch (err) {
+        console.error('BLE 送信エラー', err);
+        alert('送信に失敗しました: ' + err.message);
+      }
+    });
+
+    /* ---------- BLE 接続関数 ---------- */
+    async function connectBle() {
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ name: 'AromaSynthBLE' }],
+        optionalServices: [SERVICE_UUID]
+      });
+      bleDevice = device;
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID_RX);
+      console.log('BLE 接続完了');
+    }
 
     async function showNutrientResult() {
       // ローディング表示を表示
@@ -173,7 +222,7 @@
       console.log(`その他：${otherFile ? "'" + otherFile.name + "'" : null}`);
 
       //選択された性別の基準値を取得
-      const baseValues = baseData.find(item => item["性別"] === gender);
+      baseValues = baseData.find(item => item["性別"] === gender);
 
       //GPTに与えるため画像をBase64に変換
       const breakfastBase64Image = breakfastFile ? await fileToBase64(breakfastFile) : null;
@@ -183,7 +232,6 @@
 
       //GPTに栄養素を推定するためのリクエストを送信
       const result = await getNutrientData(breakfastBase64Image, lunchBase64Image, dinnerBase64Image, otherBase64Image);
-      let intakeData = [];
       if (result) {
         // ローディング表示を非表示
         loading.style.display = 'none';
