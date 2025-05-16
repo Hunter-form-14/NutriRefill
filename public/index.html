@@ -77,7 +77,7 @@
       </div>
       <div id="chartArea"></div>
       <div id="nutrientList"></div>
-      <button id="outputBtn">出力</button>
+      <button id="outputBtn" style="display: none;">出力</button>
     </div>
   </div>
 
@@ -168,6 +168,7 @@
       console.log('BLE 接続完了');
     }
 
+    /* ---------- 栄養素推定関数 ---------- */
     async function showNutrientResult() {
       // ローディング表示を表示
       const loading = document.getElementById('loadingIndicator');
@@ -264,8 +265,12 @@
         percentage: Math.round(item.value * 100)
       }));
 
+      // レーダーチャートと不足度リストを描画
       renderRadarChart(chartData);
       renderDeficiencyList(deficiencyData);
+
+      // 出力ボタンを表示
+      document.getElementById('outputBtn').style.display = 'block';
     }
 
     //画像をBase64に変換
