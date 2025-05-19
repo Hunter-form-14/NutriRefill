@@ -173,7 +173,7 @@
     /* ---------- BLE 接続関数 ---------- */
     async function connectBle() {
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: 'NutriRefillBLE' }],
+        filters: [{ name: 'NutriSynthBLE' }],
         optionalServices: [SERVICE_UUID]
       });
       bleDevice = device;
