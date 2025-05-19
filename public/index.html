@@ -135,12 +135,11 @@
         // 1) 未接続なら接続
         if (!bleCharacteristic) await connectBle();
 
-        // デバッグデータ生成（8値 + フラグ）
+        // デバッグデータ生成（8値）
         const generateDebugData = () => {
           const values = Array.from({ length: 8 }, () =>
             Math.floor(Math.random() * 9000) + 1000
           );
-          values.push(0); // デバッグフラグ（0=通常モード）
           return new TextEncoder().encode(values.join(','));
         };
 
