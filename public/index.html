@@ -26,19 +26,16 @@
         </label>
       </div>
       <div class="input-group">
-        <label>
-          年代:
-          <select id="generation">
-            <option value="">選択してください</option>
-            <option value="10s">10代</option>
-            <option value="20s">20代</option>
-            <option value="30s">30代</option>
-            <option value="40s">40代</option>
-            <option value="50s">50代</option>
-            <option value="60s">60代</option>
-            <option value="70s">70代</option>
-          </select>
-        </label>
+        <label>年代:</label>
+        <div id="generation">
+          <label><input type="radio" name="generation" value="10s">10代</label>
+          <label><input type="radio" name="generation" value="20s">20代</label>
+          <label><input type="radio" name="generation" value="30s">30代</label>
+          <label><input type="radio" name="generation" value="40s">40代</label>
+          <label><input type="radio" name="generation" value="50s">50代</label>
+          <label><input type="radio" name="generation" value="60s">60代</label>
+          <label><input type="radio" name="generation" value="70s">70代</label>
+        </div>
       </div>
       <button id="next1">次へ</button>
       <p>※ 将来的にはアカウントのご利用により、<br>この画面は表示されなくなります</p>
@@ -113,7 +110,8 @@
     // 「次へ」ボタン (Step1 → Step2)
     next1.addEventListener("click", () => {
       const gender = document.querySelector('input[name="gender"]:checked');
-      const generation = document.getElementById('generation').value;
+      // 修正: ラジオボタンから選択された値を取得
+      const generation = document.querySelector('input[name="generation"]:checked');
       if (!gender || !generation) {
         alert("性別と年代を選択してください。");
         return;
