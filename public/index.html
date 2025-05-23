@@ -46,22 +46,11 @@
       <h2>今日の食事の写真を選択</h2>
       <div class="upload-grid">
         <label>
-          朝食
-          <input type="file" id="breakfast" accept="image/*">
-        </label>
-        <label>
-          昼食
-          <input type="file" id="lunch" accept="image/*">
-        </label>
-        <label>
-          夕食
-          <input type="file" id="dinner" accept="image/*">
-        </label>
-        <label>
-          その他
-          <input type="file" id="other" accept="image/*">
+          食事写真（複数選択可）
+          <input type="file" id="mealImages" accept="image/*" multiple>
         </label>
       </div>
+      <div id="imagePreview" class="image-preview"></div>
       <button id="next2">次へ</button>
     </div>
 
@@ -125,6 +114,26 @@
       step2.classList.remove("active");
       step3.classList.add("active");
       showNutrientResult();
+    });
+
+    // プレビュー表示処理
+    document.getElementById('mealImages').addEventListener('change', function (e) {
+      const preview = document.getElementById('imagePreview');
+      preview.innerHTML = '';
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          const img = document.createElement('img');
+          img.src = ev.target.result;
+          img.style.maxWidth = '100px';
+          img.style.maxHeight = '100px';
+          img.style.margin = '5px';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
     });
 
     /* ---------- 出力ボタン ---------- */
@@ -222,29 +231,24 @@
       const genderInput = document.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? (genderInput.value === "male" ? "男性" : "女性") : "";
 
-      //選択された画像の取得
-      const breakfastFile = document.getElementById('breakfast').files[0] || null;
-      const lunchFile = document.getElementById('lunch').files[0] || null;
-      const dinnerFile = document.getElementById('dinner').files[0] || null;
-      const otherFile = document.getElementById('other').files[0] || null;
-
-      //デバッグのためファイル名を出力
-      console.log(`朝食：${breakfastFile ? "'" + breakfastFile.name + "'" : null}`);
-      console.log(`昼食：${lunchFile ? "'" + lunchFile.name + "'" : null}`);
-      console.log(`夕食：${dinnerFile ? "'" + dinnerFile.name + "'" : null}`);
-      console.log(`その他：${otherFile ? "'" + otherFile.name + "'" : null}`);
-
       //選択された性別の基準値を取得
       baseValues = baseData.find(item => item["性別"] === gender);
 
+      //選択された画像の取得
+      const files = Array.from(document.getElementById('mealImages').files);
+
+      //デバッグのためファイル名を出力
+      files.forEach((file, idx) => {
+        console.log(`画像${idx + 1}：'${file.name}'`);
+      });
+
       //GPTに与えるため画像をBase64に変換
-      const breakfastBase64Image = breakfastFile ? await fileToBase64(breakfastFile) : null;
-      const lunchBase64Image = lunchFile ? await fileToBase64(lunchFile) : null;
-      const dinnerBase64Image = dinnerFile ? await fileToBase64(dinnerFile) : null;
-      const otherBase64Image = otherFile ? await fileToBase64(otherFile) : null;
+      const base64Images = await Promise.all(
+        files.map(file => fileToBase64(file))
+      );
 
       //GPTに栄養素を推定するためのリクエストを送信
-      const result = await getNutrientData(breakfastBase64Image, lunchBase64Image, dinnerBase64Image, otherBase64Image);
+      const result = await getNutrientData(...base64Images);
       if (result) {
         // ローディング表示を非表示
         loading.style.display = 'none';
@@ -306,13 +310,13 @@
     }
 
     //サーバーにリクエストを送信
-    async function getNutrientData(breakfast, lunch, dinner, other) {
-      const images = [breakfast, lunch, dinner, other].filter(Boolean);
+    async function getNutrientData(...images) {
+      const validImages = images.filter(Boolean);
 
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(images)
+        body: JSON.stringify(validImages)
       });
 
       if (!response.ok) {
