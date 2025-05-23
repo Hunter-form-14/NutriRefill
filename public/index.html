@@ -111,6 +111,11 @@
 
     // 「次へ」ボタン (Step2 → Step3)
     next2.addEventListener("click", () => {
+      const files = document.getElementById('mealImages').files;
+      if (!files || files.length === 0) {
+        alert("食事写真を1枚以上選択してください。");
+        return;
+      }
       step2.classList.remove("active");
       step3.classList.add("active");
       showNutrientResult();
