@@ -260,8 +260,8 @@
         //デバッグのため推定結果を出力
         console.log(result);
         const lines = result.split("\n");
-        const outputIndex = lines.findIndex(line => line.includes("出力"));
-        const mainResult = lines[outputIndex + 2]; // 出力の2行後
+        // 最後の空でない行を取得
+        const mainResult = lines.filter(line => line.trim() !== "").pop();
         const pairs = mainResult.split(",");
         pairs.forEach(pair => {
           const [nameRaw, valueRaw] = pair.split(":");
