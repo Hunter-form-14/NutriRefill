@@ -232,7 +232,8 @@
       ];
 
       //選択された年齢と性別を取得
-      const generation = document.getElementById('generation').value;
+      const generationInput = document.querySelector('input[name="generation"]:checked');
+      const generation = generationInput ? generationInput.value : "";
       const genderInput = document.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? (genderInput.value === "male" ? "男性" : "女性") : "";
 
