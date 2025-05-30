@@ -236,6 +236,9 @@
       const genderInput = document.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? (genderInput.value === "male" ? "男性" : "女性") : "";
 
+      console.log(`選択された性別: ${gender}`);
+      console.log(`選択された年代: ${generation}`);
+
       //選択された性別の基準値を取得
       baseValues = baseData.find(item => item["性別"] === gender);
 
