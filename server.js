@@ -26,7 +26,7 @@ app.post("/api/analyze", async (req, res) => {
 
                     出力：
 
-                    カルシウム:値(mg), 鉄:値(mg), ビタミンA:値(μg), ビタミンD:値(μg), ビタミンB1:値(mg), ビタミンB2:値(mg), ビタミンB6:値(mg), ビタミンC:値(mg)`
+                    カルシウム:値(mg), 鉄:値(mg), ビタミンA:値(μg), ビタミンD:値(μg), ビタミンB1:値(mg), ビタミンB2:値(mg), ビタミンB6:値(mg), ビタミンB12:値(μg)`
             },
             ...images.map(image_url => ({
                 type: "input_image",
@@ -41,7 +41,7 @@ app.post("/api/analyze", async (req, res) => {
                     //栄養素一覧表を参照するためのツール
                     //nutrients.json（栄養素一覧表）を格納しているベクターストアのIDを指定する
                     "type": "file_search",
-                    "vector_store_ids": ["vs_680ded984ba48191a1a9fa2b06dd3ae1"]
+                    "vector_store_ids": ["vs_683d0e070da88191825efbbe311baf7b"]
                 },
                 // {
                 //     //栄養素一覧表に食品がない場合は、Web検索で代用するためのツール
