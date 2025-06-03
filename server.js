@@ -20,7 +20,7 @@ app.post("/api/analyze", async (req, res) => {
                 type: "input_text",
                 text:
                     `それぞれの食事画像内の全ての食材毎の種類と量(g)を推定し、nutrients.jsonファイルを参照して後述の栄養素の量を計算し、それらの合計値を以下の形式で出力してください：
-                    計算過程：
+                    計算過程（すべて）：
 
                     ~~~
 
