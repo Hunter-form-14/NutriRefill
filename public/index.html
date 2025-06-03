@@ -413,7 +413,7 @@
       data.forEach(item => {
         item.lackPercent = Math.max(0, 100*(1.00 - item.value)).toFixed(0); // 100% - 摂取率
         const p = document.createElement("p");
-        if (item.lackPercent === 0) {
+        if (item.lackPercent == 0) {
           // 不足 0% → 足りています
           p.textContent = `${item.name}: 足りています`;
         } else {
