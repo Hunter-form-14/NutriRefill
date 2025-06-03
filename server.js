@@ -37,7 +37,7 @@ app.post("/api/analyze", async (req, res) => {
         ];
 
         const oaRes = await openai.responses.create({
-            model: "gpt-o4-mini",
+            model: "gpt-4.1-mini",
             tools: [
                 {
                     //栄養素一覧表を参照するためのツール
