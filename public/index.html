@@ -280,20 +280,14 @@
       }
 
       // レーダーチャート用データ変換
-      const chartData = intakeData.map(item => ({
+      const deficiencyRate = intakeData.map(item => ({
         name: item.name,
         value: item.value / baseValues[item.name]
       }));
 
-      // 不足率リスト用データ変換
-      const listData = chartData.map(item => ({
-        name: item.name,
-        percentage: Math.round(item.value * 100)
-      }));
-
       // レーダーチャートと不足度リストを描画
-      renderRadarChart(chartData);
-      renderIntakeList(listData);
+      renderRadarChart(deficiencyRate);
+      renderIntakeList(deficiencyRate);
 
       // 出力ボタンを表示
       document.getElementById('outputBtn').style.display = 'block';
@@ -417,7 +411,7 @@
       const nutrientList = document.getElementById("nutrientList");
       nutrientList.innerHTML = "";
       data.forEach(item => {
-        item.lackPercent = Math.max(0, 100 - item.percentage);
+        item.lackPercent = Math.max(0, 100*(1.00 - item.value)).toFixed(0); // 100% - 摂取率
         const p = document.createElement("p");
         if (item.lackPercent === 0) {
           // 不足 0% → 足りています
