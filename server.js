@@ -37,7 +37,7 @@ app.post("/api/analyze", async (req, res) => {
         ];
 
         const oaRes = await openai.responses.create({
-            model: "gpt-4.1",
+            model: "gpt-o4-mini",
             tools: [
                 {
                     //栄養素一覧表を参照するためのツール
@@ -57,7 +57,7 @@ app.post("/api/analyze", async (req, res) => {
                 }
             ],
             //決定的な応答を得るための設定
-            temperature: 0.0,
+            temperature: 0.2,
             top_p: 0.1,
             //チャットの履歴を保存しない設定
             store: false
