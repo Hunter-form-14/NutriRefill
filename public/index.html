@@ -259,27 +259,20 @@
       );
 
       //GPTに栄養素を推定するためのリクエストを送信
-      const result = await getNutrientData(...base64Images);
-      if (result) {
-        // ローディング表示を非表示
-        loading.style.display = 'none';
-        //デバッグのため推定結果を出力
-        console.log(result);
-        const lines = result.split("\n");
-        const outputIndex = lines.findIndex(line => line.includes("出力"));
-        const mainResult = lines[outputIndex + 2]; // 出力の2行後
-        const pairs = mainResult.split(",");
-        pairs.forEach(pair => {
-          const [nameRaw, valueRaw] = pair.split(":");
-          if (!nameRaw || !valueRaw) return; // 応答不正防止
-          const name = nameRaw.trim();
-          if (!nutrients.includes(name)) return;
-          // 単位を除去して数値化 ("13μg" → 13, "0.3mg" → 0.3)
-          const numeric = parseFloat(valueRaw.replace(/[^0-9.]/g, ""));
-          intakeData.push({ name, value: numeric });
-        });
-      }
+      const results = await getNutrientData(...base64Images);
+      console.log("受け取った結果:", results);
+      // ローディング表示を非表示
+      loading.style.display = 'none';
 
+      // 各画像から推定した栄養素データを合計
+      intakeData = nutrients.map(name => {
+        // resultsは配列で、各要素が { ..., sum: { ... } } の形
+        const totalValue = results.reduce((sum, item) => {
+          // item.sum[name]があれば加算、なければ0
+          return sum + (item.sum?.[name] || 0);
+        }, 0);
+        return { name, value: totalValue };
+      });
       // レーダーチャート用データ変換
       const deficiencyRate = intakeData.map(item => ({
         name: item.name,
@@ -367,8 +360,8 @@
         return null;
       }
 
-      const { text } = await response.json();
-      return text;
+      const { results } = await response.json();
+      return results; // 配列で返す
     }
 
     /**

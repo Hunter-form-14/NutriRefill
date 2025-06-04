@@ -3,70 +3,119 @@ import OpenAI from "openai";
 import "dotenv/config.js";
 
 const app = express();
-//.envファイルから環境変数を読み込む
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(express.json({ limit: "25mb" }));   // base64変換された画像を受け取れるように
-app.use(express.static("public"));          // / で index.html を配信
+app.use(express.json({ limit: "25mb" }));
+app.use(express.static("public"));
 
 app.post("/api/analyze", async (req, res) => {
     try {
         const images = req.body;
 
-        // Base64データURLの配列を受け取る想定
-        const content = [
-            {
-                //プロンプト
-                type: "input_text",
-                text:
-                    `それぞれの食事画像内の全ての食材毎の種類と量(g)を推定し、nutrients.jsonファイルを参照して後述の栄養素の量を計算し、それらの合計値を以下の形式で出力してください：
-                    計算過程（すべて）：
+        const promptText = `
+食事画像内の全ての食材毎の種類と量(g)を推定し、nutrients.jsonファイルを参照して以下の栄養素の合計量を計算し、以下のJSON形式（各食材名ごとに値を持ち、sumで全体の合計値を出力）で出力してください。
+{
+  "ご飯(例)": {
+    "量": 数値(g),
+    "カルシウム": 数値(mg),
+    "鉄": 数値(mg),
+    "ビタミンA": 数値(μg),
+    "ビタミンD": 数値(μg),
+    "ビタミンB1": 数値(mg),
+    "ビタミンB2": 数値(mg),
+    "ビタミンB6": 数値(mg),
+    "ビタミンB12": 数値(μg)
+  },
+  "サーモン(例)": {
+    "量": 数値(g),
+    "カルシウム": 数値(mg),
+    "鉄": 数値(mg),
+    "ビタミンA": 数値(μg),
+    "ビタミンD": 数値(μg),
+    "ビタミンB1": 数値(mg),
+    "ビタミンB2": 数値(mg),
+    "ビタミンB6": 数値(mg),
+    "ビタミンB12": 数値(μg)
+  },
+  "トマト(例)": {
+    "量": 数値(g),
+    "カルシウム": 数値(mg),
+    "鉄": 数値(mg),
+    "ビタミンA": 数値(μg),
+    "ビタミンD": 数値(μg),
+    "ビタミンB1": 数値(mg),
+    "ビタミンB2": 数値(mg),
+    "ビタミンB6": 数値(mg),
+    "ビタミンB12": 数値(μg)
+  },
+  "sum": {
+    "カルシウム": 合計値(mg),
+    "鉄": 合計値(mg),
+    "ビタミンA": 合計値(μg),
+    "ビタミンD": 合計値(μg),
+    "ビタミンB1": 合計値(mg),
+    "ビタミンB2": 合計値(mg),
+    "ビタミンB6": 合計値(mg),
+    "ビタミンB12": 合計値(μg)
+  }
+}
+※上記の形式・順番・記号・単位を厳守し、他の説明文やコメントは一切含めないでください。
+`;
 
-                    ~~~
-
-                    出力：
-
-                    カルシウム:値(mg), 鉄:値(mg), ビタミンA:値(μg), ビタミンD:値(μg), ビタミンB1:値(mg), ビタミンB2:値(mg), ビタミンB6:値(mg), ビタミンB12:値(μg)
-
-                    ※上記の形式・順番・記号・単位を厳守し、他の説明文やコメントは一切含めないでください。`
-            },
-            ...images.map(image_url => ({
-                type: "input_image",
-                image_url
-            }))
-        ];
-
-        const oaRes = await openai.responses.create({
-            model: "gpt-4.1-mini",
-            tools: [
-                {
-                    //栄養素一覧表を参照するためのツール
-                    //nutrients.json（栄養素一覧表）を格納しているベクターストアのIDを指定する
-                    "type": "file_search",
-                    "vector_store_ids": ["vs_683d0e070da88191825efbbe311baf7b"]
-                },
-                // {
-                //     //栄養素一覧表に食品がない場合は、Web検索で代用するためのツール
-                //     "type": "web_search"
-                // }
-            ],
-            input: [
-                {
-                    role: "user",
-                    content
+        const results = await Promise.all(
+            images.map(async (image_url, idx) => {
+                try {
+                    const content = [
+                        {
+                            type: "input_text",
+                            text: promptText
+                        },
+                        {
+                            type: "input_image",
+                            image_url
+                        }];
+                    const oaRes = await openai.responses.create({
+                        model: "gpt-4.1-mini",
+                        tools: [
+                            {
+                                type: "file_search",
+                                vector_store_ids: ["vs_683d0e070da88191825efbbe311baf7b"]
+                            }
+                        ],
+                        input: [
+                            {
+                                role: "user",
+                                content
+                            }
+                        ],
+                        text: {
+                            format: { type: "json_object" }
+                        },
+                        temperature: 0.2,
+                        top_p: 0.1,
+                        store: false
+                    });
+                    console.log("Raw response:", oaRes.output_text);
+                    return {
+                        index: idx,
+                        data: JSON.parse(oaRes.output_text) // サーバー側でパース
+                    };
+                } catch (err) {
+                    console.error(`画像 ${idx} の処理失敗:`, err);
+                    return { index: idx, error: err.message };
                 }
-            ],
-            //決定的な応答を得るための設定
-            temperature: 0.2,
-            top_p: 0.1,
-            //チャットの履歴を保存しない設定
-            store: false
+            })
+        );
+
+        results.sort((a, b) => a.index - b.index);
+
+        return res.json({
+            results: results.map(r => r.data || { error: r.error })
         });
 
-        return res.json({ text: oaRes.output_text });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: "OpenAI request failed" });
+        return res.status(500).json({ error: "Server error" });
     }
 });
 
