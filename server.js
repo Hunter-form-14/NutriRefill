@@ -34,9 +34,9 @@ const NutritionSchema = z.object({
 // 食事画像の栄養分析APIエンドポイント
 app.post("/api/analyze", async (req, res) => {
     try {
-        const images = req.body; // 画像URL配列を受け取る
+        const images = req.body;
         const promptText = `
-食事画像内の全ての食材ごとに「name（食材名）」「量(g)」「カルシウム」「鉄」「ビタミンA」「ビタミンD」「ビタミンB1」「ビタミンB2」「ビタミンB6」「ビタミンB12」を推定し、foods配列として出力してください。またfoods全体の合計値をsumとして同じ形式で出力してください。必ず以下のJSONスキーマに厳密に従ってください。
+食事画像内の全ての食材ごとにnutrients.jsonを参照して「name（食材名）」「量(g)」「カルシウム」「鉄」「ビタミンA」「ビタミンD」「ビタミンB1」「ビタミンB2」「ビタミンB6」「ビタミンB12」を推定し、foods配列として出力してください。またfoods全体の合計値をsumとして同じ形式で出力してください。必ず以下のJSONスキーマに厳密に従ってください。
 `;
 
         // 画像ごとにOpenAI APIへリクエスト
