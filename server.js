@@ -36,7 +36,7 @@ app.post("/api/analyze", async (req, res) => {
     try {
         const images = req.body;
         const promptText = `
-食事画像内の全ての食材ごとにnutrition_list.jsonを基に「name（食材名）」「量(g)」「カルシウム」「鉄」「ビタミンA」「ビタミンD」「ビタミンB1」「ビタミンB2」「ビタミンB6」「ビタミンB12」を推定し、foods配列として出力してください。またfoods全体の合計値をsumとして同じ形式で出力してください。必ず以下のJSONスキーマに厳密に従ってください。
+画像内の全ての食材を file_search で探し出し、「name（食材名）」「量(g)」「カルシウム」「鉄」「ビタミンA」「ビタミンD」「ビタミンB1」「ビタミンB2」「ビタミンB6」「ビタミンB12」を計算し、foods配列として出力してください。またfoods全体の合計値をsumとして同じ形式で出力してください。必ず以下のJSONスキーマに厳密に従ってください。nutrition_list.json に *記載されている* 食材のみを対象にする。それ以外は出力しない。
 `;
 
         // 画像ごとにOpenAI APIへリクエスト
@@ -48,11 +48,11 @@ app.post("/api/analyze", async (req, res) => {
                         { type: "input_image", image_url }
                     ];
                     const oaRes = await openai.responses.parse({
-                        model: "gpt-4.1-mini",
+                        model: "gpt-4.1",
                         tools: [{ type: "file_search", vector_store_ids: ["vs_68421997e1f881918887df55ce3eebc3"] }],
                         input: [{ role: "user", content }],
                         text: { format: zodTextFormat(NutritionSchema, "nutrition_analysis") },
-                        temperature: 0.2,
+                        temperature: 0.0,
                         top_p: 0.1,
                         store: false
                     });
