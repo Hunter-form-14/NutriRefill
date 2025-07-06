@@ -11,7 +11,6 @@
 
 <body>
   <div class="wrapper">
-    <!-- Step 1: 性別・年齢入力 -->
     <div id="step1" class="step active">
       <h2>性別・年齢</h2>
       <div class="input-group gender-selection">
@@ -42,7 +41,6 @@
       <p>※ 将来的にはアカウントのご利用により、<br>この画面は表示されなくなります</p>
     </div>
 
-    <!-- Step 2: 食事の写真 アップロード -->
     <div id="step2" class="step">
       <h2>今日の食事の写真を選択</h2>
       <div class="upload-grid">
@@ -52,10 +50,12 @@
         </label>
       </div>
       <div id="imagePreview" class="image-preview"></div>
-      <button id="next2">次へ</button>
+      <div class="button-container">
+        <button id="back1" class="back-btn">戻る</button>
+        <button id="next2">次へ</button>
+      </div>
     </div>
 
-    <!-- Step 3: 不足栄養素表示 -->
     <div id="step3" class="step">
       <h2>摂取した栄養素</h2>
       <div id="loadingIndicator">
@@ -64,7 +64,10 @@
       </div>
       <div id="chartArea"></div>
       <div id="nutrientList"></div>
-      <button id="outputBtn" style="display: none;">出力</button>
+      <div class="button-container">
+        <button id="back2" class="back-btn" style="display: none;">戻る</button>
+        <button id="outputBtn" style="display: none;">出力</button>
+      </div>
     </div>
   </div>
 
@@ -76,9 +79,9 @@
     /* ---------- グローバル保持 ---------- */
     let bleDevice = null;
     let bleCharacteristic = null;
-    let intakeData = [];        // [{name, value}]
-    let baseValues = {};        // {カルシウム: 750, …}
-    let lackPercent = [];       // 不足率
+    let intakeData = []; // [{name, value}]
+    let baseValues = {}; // {カルシウム: 750, …}
+    let lackPercent = []; // 不足率
 
     // ステップ切り替え用
     const step1 = document.getElementById("step1");
@@ -86,7 +89,9 @@
     const step3 = document.getElementById("step3");
     const next1 = document.getElementById("next1");
     const next2 = document.getElementById("next2");
-    const ageInput = document.getElementById("age");
+    const back1 = document.getElementById("back1");
+    const back2 = document.getElementById("back2");
+
 
     // 性別選択の処理
     const genderOptions = document.querySelectorAll('.gender-option');
@@ -111,6 +116,13 @@
       step2.classList.add("active");
     });
 
+    // 「戻る」ボタン (Step2 → Step1)
+    back1.addEventListener("click", () => {
+      step2.classList.remove("active");
+      step1.classList.add("active");
+    });
+
+
     // 「次へ」ボタン (Step2 → Step3)
     next2.addEventListener("click", () => {
       const files = document.getElementById('mealImages').files;
@@ -123,15 +135,28 @@
       showNutrientResult();
     });
 
+    // 「戻る」ボタン (Step3 → Step2)
+    back2.addEventListener("click", () => {
+      step3.classList.remove("active");
+      step2.classList.add("active");
+
+      // 結果をリセット
+      document.getElementById('chartArea').innerHTML = '';
+      document.getElementById('nutrientList').innerHTML = '';
+      document.getElementById('outputBtn').style.display = 'none';
+      back2.style.display = 'none';
+    });
+
+
     // プレビュー表示処理
-    document.getElementById('mealImages').addEventListener('change', function (e) {
+    document.getElementById('mealImages').addEventListener('change', function(e) {
       const preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
       const files = Array.from(e.target.files);
       files.forEach(file => {
         if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
-        reader.onload = function (ev) {
+        reader.onload = function(ev) {
           const img = document.createElement('img');
           img.src = ev.target.result;
           img.style.maxWidth = '100px';
@@ -149,33 +174,75 @@
         // 1) 未接続なら接続
         if (!bleCharacteristic) await connectBle();
 
-        // 2) データ生成（ダミー）
-        const generateDebugData = () => {
-          const values = Array.from({ length: 8 }, () =>
-            Math.floor(Math.random() * 9000) + 1000
-          );
-          return new TextEncoder().encode(values.join(','));
+        // 2) 不足量を算出し、ポンプの作動時間(ms)を計算
+
+        // 各栄養素のタンク内溶液濃度 (wt%)
+        const concentrations = {
+          "カルシウム": 50,
+          "鉄": 8.8,
+          "ビタミンA": 0.86,
+          "ビタミンD": 1.44,
+          "ビタミンB1": 0.23,
+          "ビタミンB2": 0.34,
+          "ビタミンB6": 0.36,
+          "ビタミンB12": 0.8
         };
 
-        const debugData = generateDebugData();
-        await bleCharacteristic.writeValue(debugData);
+        // 基準値の単位をmgに統一するための係数 (μg -> mg)
+        const unitConversionFactors = {
+          "カルシウム": 1, // mg
+          "鉄": 1, // mg
+          "ビタミンA": 0.001, // μg to mg
+          "ビタミンD": 0.001, // μg to mg
+          "ビタミンB1": 1, // mg
+          "ビタミンB2": 1, // mg
+          "ビタミンB6": 1, // mg
+          "ビタミンB12": 0.001 // μg to mg
+        };
 
-        alert(`送信成功: ${new TextDecoder().decode(debugData)}`);
+        const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンB12"];
+        const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
 
-        // // 2) 不足量を算出
-        // const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンB12"];
-        // const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
-        // const lackArray = nutrients.map(n => {
-        //   const lack = Math.max(0, (baseValues[n] || 0) - (intakeMap[n] || 0));
-        //   return lack.toFixed(1); // 小数1桁
-        // });
-        // const csv = lackArray.join(',');
+        const pumpTimes = nutrients.map(nutrient => {
+          // 手順1: 不足栄養素の質量を計算 (単位: mg)
+          // 基準値と摂取量をそれぞれの単位変換係数をかけてmgに統一してから差を求める
+          const baseValue = baseValues[nutrient] || 0;
+          const intakeValue = intakeMap[nutrient] || 0;
+          const conversionFactor = unitConversionFactors[nutrient] || 1;
 
-        // // 3) 書き込み
-        // const encoder = new TextEncoder();
-        // await bleCharacteristic.writeValue(encoder.encode(csv));
+          const lackAmountMg = Math.max(0, (baseValue - intakeValue) * conversionFactor);
 
-        // alert('送信しました:\n' + csv);
+          if (lackAmountMg === 0) {
+            return 0; // 不足がなければ作動時間は0
+          }
+
+          // 手順2: 必要な溶液の質量を計算 (単位: mg)
+          // 必要な溶液の質量(mg) = 不足栄養素の質量(mg) / (濃度(wt%) / 100)
+          const concentration = concentrations[nutrient];
+          if (!concentration) {
+            console.error(`${nutrient} の濃度データがありません。`);
+            return 0;
+          }
+          const solutionMassMg = lackAmountMg / (concentration / 100);
+
+          // 手順3: 必要な溶液の体積を計算 (単位: μL)
+          // ※ 溶液の密度を 1g/mL = 1mg/μL と仮定
+          const solutionVolumeMuL = solutionMassMg;
+
+          // 手順4: ポンプの吐出時間を計算 (単位: ms)
+          // 時間(ms) = 体積(μL) / 吐出レート(μL/ms)
+          const pumpRate = 0.05; // 0.05 μL/ms
+          const pumpTimeMs = solutionVolumeMuL / pumpRate;
+
+          return Math.round(pumpTimeMs); // 四捨五入して整数にする
+        });
+
+        // 3) カンマ区切りの文字列に変換してBLEで書き込み
+        const csvData = pumpTimes.join(',');
+        const encodedData = new TextEncoder().encode(csvData);
+        await bleCharacteristic.writeValue(encodedData);
+
+        alert(`送信成功: ${csvData}`);
 
       } catch (err) {
         console.error('BLE 送信エラー', err);
@@ -186,7 +253,9 @@
     /* ---------- BLE 接続関数 ---------- */
     async function connectBle() {
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: 'NutriSynthBLE' }],
+        filters: [{
+          name: 'NutriSynthBLE'
+        }],
         optionalServices: [SERVICE_UUID]
       });
       bleDevice = device;
@@ -208,30 +277,27 @@
       ];
 
       // 性別毎基準値データ配列
-      const baseData = [
-        {
-          "性別": "男性",
-          "カルシウム": 750,
-          "鉄": 7,
-          "ビタミンA": 850,
-          "ビタミンD": 9,
-          "ビタミンB1": 1.1,
-          "ビタミンB2": 1.6,
-          "ビタミンB6": 1.5,
-          "ビタミンB12": 2.4
-        },
-        {
-          "性別": "女性",
-          "カルシウム": 650,
-          "鉄": 10.5,
-          "ビタミンA": 650,
-          "ビタミンD": 9,
-          "ビタミンB1": 0.8,
-          "ビタミンB2": 1.2,
-          "ビタミンB6": 1.2,
-          "ビタミンB12": 2.4
-        }
-      ];
+      const baseData = [{
+        "性別": "男性",
+        "カルシウム": 750,
+        "鉄": 7,
+        "ビタミンA": 850,
+        "ビタミンD": 9,
+        "ビタミンB1": 1.1,
+        "ビタミンB2": 1.6,
+        "ビタミンB6": 1.5,
+        "ビタミンB12": 2.4
+      }, {
+        "性別": "女性",
+        "カルシウム": 650,
+        "鉄": 10.5,
+        "ビタミンA": 650,
+        "ビタミンD": 9,
+        "ビタミンB1": 0.8,
+        "ビタミンB2": 1.2,
+        "ビタミンB6": 1.2,
+        "ビタミンB12": 2.4
+      }];
 
       //選択された年齢と性別を取得
       const generationInput = document.querySelector('input[name="generation"]:checked');
@@ -252,6 +318,11 @@
 
       //GPTに栄養素を推定するためのリクエストを送信
       const results = await getNutrientData(...base64Images);
+      if (!results || results.length === 0) {
+        alert("栄養素の推定に失敗しました。画像を確認してください。");
+        loading.style.display = 'none';
+        return;
+      }
 
       // ローディング表示を非表示
       loading.style.display = 'none';
@@ -265,7 +336,10 @@
         }, 0);
         // 有効数字二桁に丸める
         const roundedValue = Number(totalValue.toPrecision(2));
-        return { name, value: roundedValue };
+        return {
+          name,
+          value: roundedValue
+        };
       });
 
       // レーダーチャート用データ変換
@@ -287,8 +361,9 @@
       renderRadarChart(deficiencyRate);
       renderIntakeList(deficiencyRate);
 
-      // 出力ボタンを表示
+      // ボタンを表示
       document.getElementById('outputBtn').style.display = 'block';
+      document.getElementById('back2').style.display = 'block';
     }
 
     //画像をBase64に変換（HEIC対応版）
@@ -325,8 +400,9 @@
 
               // BlobをFileオブジェクトに変換
               processedFile = new File([convertedBlob],
-                file.name.replace(/\.(heic|heif)$/i, '.jpg'),
-                { type: 'image/jpeg' }
+                file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+                  type: 'image/jpeg'
+                }
               );
             } catch (heicError) {
               reject(new Error('HEIC画像の変換に失敗しました: ' + heicError.message));
@@ -355,7 +431,9 @@
 
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(validImages)
       });
 
@@ -364,7 +442,9 @@
         return null;
       }
 
-      const { results } = await response.json();
+      const {
+        results
+      } = await response.json();
       return results; // 配列で返す
     }
 
@@ -406,7 +486,6 @@
       // SVG を組み立て
       let svgContent = `
       <svg width="${size}" height="${size}">
-        <!-- 外側の正八角形：100%必要量（オレンジ） -->
         <polygon points="${outerPolygonStr}"
                  fill="orange" stroke="darkorange" stroke-width="2"/>
     `;

@@ -1,4 +1,4 @@
-    /* 全体の基本設定 */
+/* 全体の基本設定 */
     body {
       margin: 0;
       padding: 0;
@@ -104,6 +104,7 @@
       display: flex;
       flex-wrap: wrap;
       margin-top: 10px;
+      margin-bottom: 16px;
     }
 
     .image-preview img {
@@ -124,6 +125,20 @@
 
     button:hover {
       opacity: 0.9;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 16px;
+    }
+
+    .button-container button {
+      flex-grow: 1;
+    }
+
+    .back-btn {
+      background-color: #E6D7B3;
+      color: #6B564E;
     }
 
     /* レーダーチャート */
@@ -151,6 +166,12 @@
       color: #fff;
       border: none;
       border-radius: 8px;
+    }
+
+    /* #outputBtnがbutton-container内にある場合の調整 */
+    .button-container #outputBtn {
+        width: auto; /* widthを自動調整に戻す */
+        margin-top: 0;
     }
 
     /* ロード画面 */
