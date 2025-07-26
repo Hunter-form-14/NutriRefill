@@ -176,66 +176,79 @@
 
         // 2) 不足量を算出し、ポンプの作動時間(ms)を計算
 
-        // 各栄養素のタンク内溶液濃度 (wt%)
-        const concentrations = {
-          "カルシウム": 50,
-          "鉄": 8.8,
-          "ビタミンA": 0.86,
-          "ビタミンD": 1.44,
-          "ビタミンB1": 0.23,
-          "ビタミンB2": 0.34,
-          "ビタミンB6": 0.36,
-          "ビタミンB12": 0.8
-        };
+        // 2) データ生成（ダミー）
+        const generateDebugData = () => {
+          const values = Array.from({ length: 8 }, () =>
+            Math.floor(Math.random() * 9000) + 1000
+          );
+          return new TextEncoder().encode(values.join(','));
+          };
 
-        // 基準値の単位をmgに統一するための係数 (μg -> mg)
-        const unitConversionFactors = {
-          "カルシウム": 1, // mg
-          "鉄": 1, // mg
-          "ビタミンA": 0.001, // μg to mg
-          "ビタミンD": 0.001, // μg to mg
-          "ビタミンB1": 1, // mg
-          "ビタミンB2": 1, // mg
-          "ビタミンB6": 1, // mg
-          "ビタミンB12": 0.001 // μg to mg
-        };
+        const debugData = generateDebugData();
+        await bleCharacteristic.writeValue(debugData);
 
-        const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンB12"];
-        const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
+        alert(`送信成功: ${new TextDecoder().decode(debugData)}`);
 
-        const pumpTimes = nutrients.map(nutrient => {
-          // 手順1: 不足栄養素の質量を計算 (単位: mg)
-          // 基準値と摂取量をそれぞれの単位変換係数をかけてmgに統一してから差を求める
-          const baseValue = baseValues[nutrient] || 0;
-          const intakeValue = intakeMap[nutrient] || 0;
-          const conversionFactor = unitConversionFactors[nutrient] || 1;
+        // // 各栄養素のタンク内溶液濃度 (wt%)
+        // const concentrations = {
+        //   "カルシウム": 50,
+        //   "鉄": 8.8,
+        //   "ビタミンA": 0.86,
+        //   "ビタミンD": 1.44,
+        //   "ビタミンB1": 0.23,
+        //   "ビタミンB2": 0.34,
+        //   "ビタミンB6": 0.36,
+        //   "ビタミンB12": 0.8
+        // };
 
-          const lackAmountMg = Math.max(0, (baseValue - intakeValue) * conversionFactor);
+        // // 基準値の単位をmgに統一するための係数 (μg -> mg)
+        // const unitConversionFactors = {
+        //   "カルシウム": 1, // mg
+        //   "鉄": 1, // mg
+        //   "ビタミンA": 0.001, // μg to mg
+        //   "ビタミンD": 0.001, // μg to mg
+        //   "ビタミンB1": 1, // mg
+        //   "ビタミンB2": 1, // mg
+        //   "ビタミンB6": 1, // mg
+        //   "ビタミンB12": 0.001 // μg to mg
+        // };
 
-          if (lackAmountMg === 0) {
-            return 0; // 不足がなければ作動時間は0
-          }
+        // const nutrients = ["カルシウム", "鉄", "ビタミンA", "ビタミンD", "ビタミンB1", "ビタミンB2", "ビタミンB6", "ビタミンB12"];
+        // const intakeMap = Object.fromEntries(intakeData.map(d => [d.name, d.value]));
 
-          // 手順2: 必要な溶液の質量を計算 (単位: mg)
-          // 必要な溶液の質量(mg) = 不足栄養素の質量(mg) / (濃度(wt%) / 100)
-          const concentration = concentrations[nutrient];
-          if (!concentration) {
-            console.error(`${nutrient} の濃度データがありません。`);
-            return 0;
-          }
-          const solutionMassMg = lackAmountMg / (concentration / 100);
+        // const pumpTimes = nutrients.map(nutrient => {
+        //   // 手順1: 不足栄養素の質量を計算 (単位: mg)
+        //   // 基準値と摂取量をそれぞれの単位変換係数をかけてmgに統一してから差を求める
+        //   const baseValue = baseValues[nutrient] || 0;
+        //   const intakeValue = intakeMap[nutrient] || 0;
+        //   const conversionFactor = unitConversionFactors[nutrient] || 1;
 
-          // 手順3: 必要な溶液の体積を計算 (単位: μL)
-          // ※ 溶液の密度を 1g/mL = 1mg/μL と仮定
-          const solutionVolumeMuL = solutionMassMg;
+        //   const lackAmountMg = Math.max(0, (baseValue - intakeValue) * conversionFactor);
 
-          // 手順4: ポンプの吐出時間を計算 (単位: ms)
-          // 時間(ms) = 体積(μL) / 吐出レート(μL/ms)
-          const pumpRate = 0.05; // 0.05 μL/ms
-          const pumpTimeMs = solutionVolumeMuL / pumpRate;
+        //   if (lackAmountMg === 0) {
+        //     return 0; // 不足がなければ作動時間は0
+        //   }
 
-          return Math.round(pumpTimeMs); // 四捨五入して整数にする
-        });
+        //   // 手順2: 必要な溶液の質量を計算 (単位: mg)
+        //   // 必要な溶液の質量(mg) = 不足栄養素の質量(mg) / (濃度(wt%) / 100)
+        //   const concentration = concentrations[nutrient];
+        //   if (!concentration) {
+        //     console.error(`${nutrient} の濃度データがありません。`);
+        //     return 0;
+        //   }
+        //   const solutionMassMg = lackAmountMg / (concentration / 100);
+
+        //   // 手順3: 必要な溶液の体積を計算 (単位: μL)
+        //   // ※ 溶液の密度を 1g/mL = 1mg/μL と仮定
+        //   const solutionVolumeMuL = solutionMassMg;
+
+        //   // 手順4: ポンプの吐出時間を計算 (単位: ms)
+        //   // 時間(ms) = 体積(μL) / 吐出レート(μL/ms)
+        //   const pumpRate = 0.05; // 0.05 μL/ms
+        //   const pumpTimeMs = solutionVolumeMuL / pumpRate;
+
+        //   return Math.round(pumpTimeMs); // 四捨五入して整数にする
+        // });
 
         // 3) カンマ区切りの文字列に変換してBLEで書き込み
         const csvData = pumpTimes.join(',');
