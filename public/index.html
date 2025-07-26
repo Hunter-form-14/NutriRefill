@@ -149,14 +149,14 @@
 
 
     // プレビュー表示処理
-    document.getElementById('mealImages').addEventListener('change', function (e) {
+    document.getElementById('mealImages').addEventListener('change', function(e) {
       const preview = document.getElementById('imagePreview');
       preview.innerHTML = '';
       const files = Array.from(e.target.files);
       files.forEach(file => {
         if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
-        reader.onload = function (ev) {
+        reader.onload = function(ev) {
           const img = document.createElement('img');
           img.src = ev.target.result;
           img.style.maxWidth = '100px';
@@ -176,13 +176,13 @@
 
         // 2) 不足量を算出し、ポンプの作動時間(ms)を計算
 
+        // 2) データ生成（ダミー）
         const generateDebugData = () => {
-          const values = Array.from({ length: 8 }, (_, index) => {
-            // 最初の要素（index 0）は1500、それ以外は0
-            return index === 0 ? 4000 : 0;
-          });
+          const values = Array.from({ length: 8 }, () =>
+            Math.floor(Math.random() * 9000)
+          );
           return new TextEncoder().encode(values.join(','));
-        };
+          };
 
         const debugData = generateDebugData();
         await bleCharacteristic.writeValue(debugData);
@@ -414,8 +414,8 @@
               // BlobをFileオブジェクトに変換
               processedFile = new File([convertedBlob],
                 file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-                type: 'image/jpeg'
-              }
+                  type: 'image/jpeg'
+                }
               );
             } catch (heicError) {
               reject(new Error('HEIC画像の変換に失敗しました: ' + heicError.message));
