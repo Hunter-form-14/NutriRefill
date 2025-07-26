@@ -179,7 +179,7 @@
         // 2) データ生成（ダミー）
         const generateDebugData = () => {
           const values = Array.from({ length: 8 }, () =>
-            Math.floor(Math.random() * 9000)
+            Math.floor(Math.random() * 9000) + 1000
           );
           return new TextEncoder().encode(values.join(','));
           };
