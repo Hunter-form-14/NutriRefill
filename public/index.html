@@ -251,11 +251,11 @@
         // });
 
         // 3) カンマ区切りの文字列に変換してBLEで書き込み
-        const csvData = pumpTimes.join(',');
-        const encodedData = new TextEncoder().encode(csvData);
-        await bleCharacteristic.writeValue(encodedData);
+        // const csvData = pumpTimes.join(',');
+        // const encodedData = new TextEncoder().encode(csvData);
+        // await bleCharacteristic.writeValue(encodedData);
 
-        alert(`送信成功: ${csvData}`);
+        // alert(`送信成功: ${csvData}`);
 
       } catch (err) {
         console.error('BLE 送信エラー', err);
