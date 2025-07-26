@@ -179,7 +179,7 @@
         const generateDebugData = () => {
           const values = Array.from({ length: 8 }, (_, index) => {
             // 最初の要素（index 0）は1500、それ以外は0
-            return index === 0 ? 3528 : 0;
+            return index === 0 ? 4000 : 0;
           });
           return new TextEncoder().encode(values.join(','));
         };
